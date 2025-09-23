@@ -84,16 +84,16 @@ Follow steps 1-4 from above.
 
 Helix 1 and helix 2
 
-![](MainChainDistanceCalculations/9d9v_Helix1and2ViewPoint.png){width = 20%}
+<img src="MainChainDistanceCalculations/9d9v_Helix1and2ViewPoint.png" width="50%">
 
 Helix 2 and helix 3
 
-![](MainChainDistanceCalculations/9d9v_Helix2and3ViewPoint.png){width = 20%}
+<img src="MainChainDistanceCalculations/9d9v_Helix2and3ViewPoint.png" width="50%">
 
 
 Helix 1 and helix 3
 
-![](MainChainDistanceCalculations/9d9v_Helix1and3ViewPoint.png){width = 20%}
+<img src="MainChainDistanceCalculations/9d9v_Helix1and3ViewPoint.png" width="50%">
 
 
 </br>
@@ -116,7 +116,8 @@ Alpha carbon distances for key helical pairings
 
 Alpha carbon distances differences between Paired-like and ANTP classes
 
-![Alpha carbon distances differences between Paired-like and ANTP classes](MainChainDistanceCalculations/AlphaCarbonDistances_PairedLANTPDifferences.png){width 80%}
+<img src="MainChainDistanceCalculations/AlphaCarbonDistances_PairedLANTPDifferences.png" width="68%">
+
 
 
 
