@@ -173,7 +173,7 @@ dfDBD <- df %>% mutate(seqDBD = subseq(seq, start = DBD_start, end = DBD_end)) %
                         TRUE ~ TF)) %>%
   dplyr::select(-c(n, HDnum)) %>%
   merge(., Family)
-  #filter(Class == "ANTP")
+#filter(Class == "ANTP")
 
 
 AA <- AAStringSet(dfDBD %>% .$seqDBD)
@@ -220,7 +220,7 @@ As the ANTP and Paired-like classes cluster together and these classes typically
 
 Filter for 60 amino acid DNA binding domains 
 
-```{r, fig.width = 12, fig.height = 11, results = 'hide'}
+```{r, fig.width = 12, fig.height = 11}
 
 
 dfDBD <- df %>% mutate(seqDBD = subseq(seq, start = DBD_start, end = DBD_end)) %>%
@@ -302,14 +302,15 @@ pheatmap(distances %>% as.matrix(),
          drop_levels = FALSE, 
          show_rownames = TRUE, 
          show_colnames = TRUE, 
-         width = 10, 
+         width = 8, 
+         height = 7,  
          cellwidth = 3, 
          cellheight = 3,
          border_color = NA,
-         height = 8,
          method = "complete",
          angle_col = 90,
          annotation = annot_df,
+         file = "DBD_heatmap.png",
          annotation_row = annot_df,
          annotation_names_row = FALSE, 
          annoation_names_col = FALSE,
@@ -319,15 +320,15 @@ pheatmap(distances %>% as.matrix(),
          fontsize_row = 5, 
          fontsize_col = 5,
          labels_row = labs.row,
-         labels_col = labs.col)
+         labels_col = labs.col) %>% print()
 
 
 ```
-
+![](DBD_heatmap.png)
 
 ### Paired-like cladogram
 
-```{r, fig.width = 6, fig.height = 11, results = 'hide'}
+```{r, fig.width = 4, fig.height = 8, results = 'hide'}
 
 flank = params$flank
 
@@ -441,33 +442,14 @@ H <- data.frame(xmin = c(9.5, 27.5, 41.5),
 DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TRUE, tile = FALSE) {
   
   lower_range = 0 %>% as.character()
-  outer_range = (60 + 2*flank) %>% as.character()
+  outer_range = 60 %>% as.character()
   
-  tmp1 <- filter(data, !!rlang::sym(column) == filter1) %>%
+  group1 <- filter(data, !!rlang::sym(column) == filter1) %>%
     .$seqDBD %>%
     AAStringSet(.)
   
-  names(tmp1) <- data %>%
-    filter(!!rlang::sym(column) == filter1) %>%
-    .$TF
-  
-  tmp1 %>%
-    msa(type = "protein") %>%
-    msaConvert(type = "bios2mds::align") %>%
-    export.fasta(outfile = "take2.fa",
-                 ncol = lengths(.) %>% max())
-  
-  SubsetClassAA1 <- readAAStringSet("take2.fa") %>%
-    base::chartr(x = ., old = "-", new = "1")
-  
-  x1 <- as.character(tmp1, use.names = FALSE) %>%
-    as.data.frame(., nm = "seq")
-  
-  x1_length <- length(SubsetClassAA1)
-  
-  
   plot1 <- ggplot() +
-    geom_logo(x1$seq,
+    geom_logo(group1 %>% as.data.frame(),
               stack_width = 0.75,
               namespace = namespace$Residue,
               col_scheme = col_scheme,
@@ -476,11 +458,11 @@ DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TR
     theme(text = element_text(size = 32),
           legend.position = "none", 
           plot.title = element_text(size = 28)) +
-    scale_x_continuous(labels = seq(from = 5, by = 5, to = 60 + flank), 
-                       breaks = seq(from = 5, by = 5, to = 60 + 2*flank), 
+    scale_x_continuous(labels = seq(from = 5, by = 5, to = 60), 
+                       breaks = seq(from = 5, by = 5, to = 60), 
                        expand = c(0,0), 
                        limits = c(0.5, 60.5)) + 
-    ggtitle(paste(filter1, " (n = ", x1_length, ")", sep = "")) + 
+    ggtitle(paste(filter1, " (n = ", length(group1), ")", sep = "")) + 
     geom_rect(data = H, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), 
               color = "lightgray",
               alpha = 0.1) + 
@@ -494,32 +476,14 @@ DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TR
   
   else {
     
-    tmp2 <- data %>%
+    group2 <- data %>%
       filter(!!rlang::sym(column) == filter2) %>%
       .$seqDBD %>%
       AAStringSet(.)
     
-    names(tmp2) <- data %>%
-      filter(!!rlang::sym(column) == filter2) %>%
-      .$TF
-    
-    tmp2 %>%
-      msa(type = "protein") %>%
-      msaConvert(type = "bios2mds::align") %>%
-      export.fasta(outfile = "take2.fa",
-                   ncol = lengths(.) %>% max())
-    
-    SubsetClassAA2 <- readAAStringSet("take2.fa") %>%
-      base::chartr(x = ., old = "-", new = "1")
-    
-    x2 <- as.character(tmp2, use.names = FALSE) %>%
-      as.data.frame(., nm = "seq")
-    
-    x2_length <- length(SubsetClassAA2)
-    
     
     plot2 <- ggplot() +
-      geom_logo(x2$seq,
+      geom_logo(group2 %>% as.data.frame(),
                 stack_width = 0.75,
                 namespace = namespace$Residue,
                 col_scheme = col_scheme,
@@ -527,22 +491,22 @@ DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TR
       theme_logo() +
       theme(text = element_text(size = 32),
             legend.position = "none") +
-      scale_x_continuous(labels = seq(from = 2, by = 2, to = 60 + flank), 
-                         breaks = seq(from = 2, by = 2, to = 60 + 2*flank), 
+      scale_x_continuous(labels = seq(from = 2, by = 2, to = 60), 
+                         breaks = seq(from = 2, by = 2, to = 60), 
                          expand = c(0,0), 
                          limits = c(0.5, 60.5)) + 
-      ggtitle(paste(filter2, " (n = ", x2_length, ")", sep = "")) + 
+      ggtitle(paste(filter2, " (n = ", length(group2), ")", sep = "")) + 
       geom_rect(data = H, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), 
                 color = "lightgray",
                 alpha = 0.1) + 
       ylim(c(0,4.5))
     
     
-    g1 <- geom_logo(x1$seq, plot = FALSE) %>%
+    g1 <- geom_logo(group1 %>% as.data.frame(), plot = FALSE) %>%
       group_by(position, letter) %>%
       mutate(group = "GROUP1")
     
-    g2 <- geom_logo(x2$seq, plot = FALSE) %>%
+    g2 <- geom_logo(group2 %>% as.data.frame(), plot = FALSE) %>%
       group_by(position, letter) %>%
       mutate(group ="GROUP2")
     
@@ -573,13 +537,12 @@ DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TR
       mutate(y = GROUP1 - GROUP2)  %>%
       dplyr::select(-c(GROUP1, GROUP2)) %>%
       ungroup() %>%
-      pivot_wider(values_from = "y", names_from = "letter")
-    
-    
-    l[is.na(l)] <- 0
-    l <- l %>%
-      as.matrix() %>%
+      pivot_wider(values_from = "y", 
+                  names_from = "letter", 
+                  values_fill = 0) %>% 
+      as.matrix() %>% 
       t()
+    
     
     l <- l[-1, ]
     
@@ -593,20 +556,6 @@ DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TR
                  # linetype = "longdash",
                  color = "gray",
                  linewidth = 0.5) +
-      annotate(geom = "rect", 
-               xmin = c(25.5, 43.5), 
-               xmax = c(26.5, 44.5), 
-               ymin = c(-Inf, -Inf), 
-               ymax = c(Inf, Inf), 
-               fill = "lightblue", 
-               alpha = 0.4) + 
-      annotate(geom = "rect", 
-               xmin = c(27.5), 
-               xmax = c(28.5), 
-               ymin = c(-Inf, -Inf), 
-               ymax = c(Inf, Inf), 
-               fill = "lightgray", 
-               alpha = 0.4) + 
       geom_logo(l, method = "custom",
                 stack_width = 0.75,
                 namespace = namespace,
@@ -617,8 +566,8 @@ DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TR
             legend.position = "none", 
             axis.ticks.length = unit(0, "pt"), 
             plot.title = element_text(size = 28)) +
-      scale_x_continuous(labels = seq(from = 5, by = 5, to = 60 + flank), 
-                         breaks = seq(from = 5, by = 5, to = 60 + 2*flank), 
+      scale_x_continuous(labels = seq(from = 5, by = 5, to = 60), 
+                         breaks = seq(from = 5, by = 5, to = 60), 
                          expand = c(0,0), 
                          limits = c(0.5, 60.5)) + 
       scale_y_continuous(labels = c(-4, -2, 0, 2, 4), 
@@ -633,9 +582,9 @@ DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TR
       plot4 <- 
         data %>% 
         filter( (!!rlang::sym(column) == filter1)  | (!!rlang::sym(column) == filter2) ) %>%
-        separate(seqDBD, into = ( c(0: (60 + 2*flank)) %>% as.character() ), sep = "") %>% 
+        separate(seqDBD, into = ( c(0:60) %>% as.character() ), sep = "") %>% 
         dplyr::select(-c("0")) %>%
-        pivot_longer(( c(1: (60 + 2*flank)) %>% as.character() ),
+        pivot_longer(( c(1:60) %>% as.character() ),
                      names_to = "Position",
                      values_to = "Residue") %>%
         merge(., namespace) %>%
@@ -654,8 +603,8 @@ DifferentialAlign2seq <- function(data, column, filter1, filter2 = NA, norm = TR
               plot.title = element_text(size = 28)) +
         scale_color_manual(values = namespace$Color,
                            breaks = namespace$Type) + 
-        scale_x_continuous(labels = seq(from = 1, by = 3, to = 60 + flank), 
-                           breaks = seq(from = 1, by = 3, to = 60 + 2*flank), 
+        scale_x_continuous(labels = seq(from = 1, by = 3, to = 60), 
+                           breaks = seq(from = 1, by = 3, to = 60), 
                            limits = c(0.5, 60.5), 
                            expand = c(0,0)) + 
         geom_hline(yintercept = 10.5, 
@@ -707,147 +656,76 @@ plot_grid(plot1, plot2, plot3, align = "hv", axis = "tblr", nrow = 3, rel_height
 
 ## Interrogate specific positions
 
-### Position 44
+```{r}
 
-```{r, fig.width = 4.7, fig.height = 4}
-
-dfDBD %>% 
-  filter(Class %in% c("ANTP", "Paired-like")) %>% 
-  dplyr::select(-seq) %>% 
-  separate(seqDBD, into = c(0:60) %>% as.character(), sep = "") %>% 
-  pivot_longer(c(`1`:`60`), names_to = "Position", values_to = "Residue") %>% 
-  merge(., namespace, by = "Residue") %>% 
-  filter(Position == "44") %>% 
-  mutate(Residue = factor(Residue, levels = namespace$Residue, ordered = TRUE)) %>%
-  group_by(Class, Type, Residue) %>% 
-  summarize(Count = n()) %>% 
-  ggplot(aes(x = Residue, 
-             y = Count, 
-             fill = Type,
-             color = Type,
-             label = Count)) + 
-  geom_col(show.legend = FALSE, 
-           alpha = 0.6) + 
-  geom_text(vjust = -1, 
-            color = "black", 
-            size = 5) +
-  facet_grid(~Class, 
-             scales = "free_x", 
-             space = "free") + 
-  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
-                     limits = c(0, 115)) + 
-  scale_fill_manual(breaks = c("Basic", "Acidic", "Polar", "Special", "Hydrophobic", "Empty"), 
-                    values = c("#255C99", "#D62839", "#109648", "#5E239D", "#000000", "gray")) + 
-  scale_color_manual(breaks = c("Basic", "Acidic", "Polar", "Special", "Hydrophobic", "Empty"), 
-                     values = c("#255C99", "#D62839", "#109648", "#5E239D", "#000000", "gray")) +
-  xlab("Amino acid") + 
-  ggtitle("Position 44") + 
-  theme_bw() + 
-  theme(text = element_text(size = 20), 
-        panel.grid = element_blank(),
-        plot.title = element_text(size = 18), 
-        axis.title = element_text(size = 18)
-        #       axis.text.x = element_text(angle = 30,
-        #                                  hjust = 1, 
-        #                                  vjust = 1)
-  ) 
-
-```
-
-### Position 28
-
-```{r, fig.width = 4.7, fig.height = 4}
-
-dfDBD %>% 
-  filter(Class %in% c("ANTP", "Paired-like")) %>% 
-  dplyr::select(-seq) %>% 
-  separate(seqDBD, into = c(0:60) %>% as.character(), sep = "") %>% 
-  pivot_longer(c(`1`:`60`), names_to = "Position", values_to = "Residue") %>% 
-  merge(., namespace, by = "Residue") %>% 
-  filter(Position == "28") %>% 
-  mutate(Residue = factor(Residue, levels = namespace$Residue, ordered = TRUE)) %>%
-  group_by(Class, Type, Residue) %>% 
-  summarize(Count = n()) %>% 
-  ggplot(aes(x = reorder(Residue, Type), 
-             y = Count, 
-             fill = Type,
-             color = Type,
-             label = Count)) + 
-  geom_col(show.legend = FALSE, 
-           alpha = 0.6) + 
-  geom_text(vjust = -1, 
-            color = "black", 
-            size = 5) +
-  facet_grid(~Class, 
-             scales = "free_x", 
-             space = "free_x") + 
-  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
-                     limits = c(0, 48)) + 
-  scale_fill_manual(breaks = c("Basic", "Acidic", "Polar", "Special", "Hydrophobic", "Empty"), 
-                    values = c("#255C99", "#D62839", "#109648", "#5E239D", "#000000", "gray")) + 
-  scale_color_manual(breaks = c("Basic", "Acidic", "Polar", "Special", "Hydrophobic", "Empty"), 
-                     values = c("#255C99", "#D62839", "#109648", "#5E239D", "#000000", "gray")) +
-  xlab("Amino acid") + 
-  ggtitle("Position 28") + 
-  theme_bw() + 
-  theme(text = element_text(size = 20), 
-        panel.grid = element_blank(), 
-        plot.title = element_text(size = 18), 
-        axis.title = element_text(size = 18), 
-        legend.position = "bottom"
-        #       axis.text.x = element_text(angle = 30,
-        #                                  hjust = 1, 
-        #                                  vjust = 1)
-  )
+residueDistribution <- function(data, ClassGroups, DBDPosition){
+  
+  data %>% 
+    filter(Class %in% ClassGroups) %>% 
+    dplyr::select(-seq) %>% 
+    separate(seqDBD, into = c(0:60) %>% as.character(), sep = "") %>% 
+    pivot_longer(c(`1`:`60`), names_to = "Position", values_to = "Residue") %>% 
+    merge(., namespace, by = "Residue") %>% 
+    filter(Position == DBDPosition %>% as.character()) %>% 
+    mutate(Residue = factor(Residue, levels = namespace$Residue, ordered = TRUE)) %>%
+    group_by(Class, Type, Residue) %>% 
+    summarize(Count = n()) %>% 
+    ggplot(aes(x = Residue, 
+               y = Count, 
+               fill = Type,
+               color = Type,
+               label = Count)) + 
+    geom_col(show.legend = FALSE, 
+             alpha = 0.6) + 
+    geom_text(vjust = -1, 
+              color = "black", 
+              size = 5) +
+    facet_grid(.~Class, 
+               scales = "free_x", 
+               space = "free",
+    ) + 
+    scale_y_continuous(expand = expansion(mult = c(0, 0.2))) + 
+    scale_fill_manual(breaks = c("Basic", "Acidic", "Polar", "Special", "Hydrophobic", "Empty"), 
+                      values = c("#255C99", "#D62839", "#109648", "#5E239D", "#000000", "gray")) + 
+    scale_color_manual(breaks = c("Basic", "Acidic", "Polar", "Special", "Hydrophobic", "Empty"), 
+                       values = c("#255C99", "#D62839", "#109648", "#5E239D", "#000000", "gray")) +
+    xlab("Amino acid") + 
+    ggtitle(paste("Position ", as.character(DBDPosition), sep = "")) + 
+    theme_bw() + 
+    theme(text = element_text(size = 20), 
+          panel.grid = element_blank(),
+          plot.title = element_text(size = 18), 
+          axis.title = element_text(size = 18)
+    ) 
+  
+}
 
 
 ```
 
-### Position 26
 
 ```{r, fig.width = 4.7, fig.height = 4}
 
-dfDBD %>% 
-  filter(Class %in% c("ANTP", "Paired-like")) %>% 
-  dplyr::select(-seq) %>% 
-  separate(seqDBD, into = c(0:60) %>% as.character(), sep = "") %>% 
-  pivot_longer(c(`1`:`60`), names_to = "Position", values_to = "Residue") %>% 
-  merge(., namespace, by = "Residue") %>% 
-  filter(Position == "26") %>% 
-  mutate(Residue = factor(Residue, levels = namespace$Residue, ordered = TRUE)) %>%
-  group_by(Class, Type, Residue) %>% 
-  summarize(Count = n()) %>% 
-  ggplot(aes(x = Residue, 
-             y = Count, 
-             fill = Type,
-             color = Type,
-             label = Count)) + 
-  geom_col(show.legend = FALSE, 
-           alpha = 0.6) + 
-  geom_text(vjust = -1, 
-            color = "black", 
-            size = 5) +
-  facet_grid(.~Class, 
-             scales = "free_x", 
-             space = "free",
-  ) + 
-  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
-                     limits = c(0, 90)) + 
-  scale_fill_manual(breaks = c("Basic", "Acidic", "Polar", "Special", "Hydrophobic", "Empty"), 
-                    values = c("#255C99", "#D62839", "#109648", "#5E239D", "#000000", "gray")) + 
-  scale_color_manual(breaks = c("Basic", "Acidic", "Polar", "Special", "Hydrophobic", "Empty"), 
-                     values = c("#255C99", "#D62839", "#109648", "#5E239D", "#000000", "gray")) +
-  xlab("Amino acid") + 
-  ggtitle("Position 26") + 
-  theme_bw() + 
-  theme(text = element_text(size = 20), 
-        panel.grid = element_blank(),
-        plot.title = element_text(size = 18), 
-        axis.title = element_text(size = 18)
-        #       axis.text.x = element_text(angle = 30,
-        #                                  hjust = 1, 
-        #                                  vjust = 1)
-  ) 
+residueDistribution(dfDBD, c("Paired-like", "ANTP"), 26)
+
+```
+
+
+```{r, fig.width = 4.7, fig.height = 4}
+
+residueDistribution(dfDBD, c("Paired-like", "ANTP"), 28)
+
+```
+
+```{r, fig.width = 4.7, fig.height = 4}
+
+residueDistribution(dfDBD, c("Paired-like", "ANTP"), 44)
+
+```
+
+```{r, fig.width = 4.7, fig.height = 4}
+
+residueDistribution(dfDBD, c("Paired-like", "ANTP"), 46)
 
 ```
 
